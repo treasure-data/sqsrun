@@ -1,0 +1,25 @@
+= sqsrun
+
+A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run command or script when a message is received. Only when the command succeeded, it removes the message.
+
+== Usage
+
+  Usage: sqsrun [options]
+      -k, --key-id ID                  AWS Access Key ID
+      -s, --secret-key KEY             AWS Secret Access Key
+      -q, --queue NAME                 SQS queue name
+      -t, --timeout SEC                SQS visibility timeout (default: 30)
+          --push MESSAGE               Push maessage to the queue
+          --list                       List queues
+          --exec COMMAND               Execute command
+          --run SCRIPT.rb              Run method named 'run' defined in the script
+      -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
+      -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
+
+1. sqsrun receives a message from the queue.
+2. sqsrun executes a command or runs a script.
+   * if the process takes long time, sqsrun extends visibility timeout. this is repeated until it is killed.
+   * if the process takes more long time, sqsrun kills the process.
+4. if it succeeded, sqsrun removes the message from the queue.
+5. if it failed, sqsrun set the visibility timeout to 0 and expect to be retried.
+
