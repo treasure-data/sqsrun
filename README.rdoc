@@ -1,6 +1,17 @@
 = sqsrun
 
-A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run command or script when a message is received. Only when the command succeeded, it removes the message.
+A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run command or script when a message is received. The message is removed only when the command succeeded.
+
+
+== Architecture
+
+1. sqsrun receives a message from the queue.
+2. sqsrun executes a command or runs a script.
+   * if the process takes long time, sqsrun extends visibility timeout. this is repeated until it is killed.
+   * if the process takes more long time, sqsrun kills the process.
+4. if it succeeded, sqsrun removes the message from the queue.
+5. if it failed, sqsrun set the visibility timeout to 0 and expect to be retried.
+
 
 == Usage
 
@@ -16,10 +27,42 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
       -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
       -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
 
-1. sqsrun receives a message from the queue.
-2. sqsrun executes a command or runs a script.
-   * if the process takes long time, sqsrun extends visibility timeout. this is repeated until it is killed.
-   * if the process takes more long time, sqsrun kills the process.
-4. if it succeeded, sqsrun removes the message from the queue.
-5. if it failed, sqsrun set the visibility timeout to 0 and expect to be retried.
+One of --push, --list, --exec or --run is required. The behavior of the commands is described below:
+
+
+=== push
+
+Push a message to the queue. -k, -s and -q options are required.
+
+
+=== list
+
+Show list of queues. -k and -s options are required.
+
+
+=== exec
+
+Execute a command when a message is received. Body of the message is passed to the stdin. The command have to exit with status code 0 when it succeeded.
+
+-k, -s and -q options are required.
+
+_Example:_
+
+  #!/usr/bin/env ruby
+  require 'json'
+  js = JSON.load(STDIN.read)
+  puts "received: #{js.inspect}"
+
+
+=== run
+
+This is same as 'exec' except that this calls a method named 'run' defined in the file instead of executing the file. Body of the message is passed to the argument. It is assumed it succeeded if the method doesn't any raise errors.
+
+_Example:_
+
+  require 'json'
+  def run(msg)
+    js = JSON.load(msg)
+    puts "received: #{js.inspect}"
+  end
 
