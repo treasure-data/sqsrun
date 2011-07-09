@@ -133,7 +133,7 @@ end
 
 class ExecRunner
   def initialize(cmd)
-    @cmd = cmd
+    @cmd = cmd + ' ' + ARGV.map {|a| Shellwords.escape(a) }.join(' ')
     @iobuf = ''
   end
 
@@ -183,6 +183,8 @@ end
 require 'optparse'
 
 op = OptionParser.new
+
+op.banner += " [-- <ARGV-for-exec-or-run>]"
 
 type = nil
 message = nil
@@ -251,9 +253,15 @@ op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (defau
 end
 
 begin
-  op.parse!(ARGV)
+  if eqeq = ARGV.index('--')
+    argv = ARGV.slice!(0, eqeq)
+    ARGV.slice!(0)
+  else
+    argv = ARGV.slice!(0..-1)
+  end
+  op.parse!(argv)
 
-  if ARGV.length != 0
+  if argv.length != 0
     usage nil
   end
 

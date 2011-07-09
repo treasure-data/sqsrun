@@ -15,7 +15,7 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
 
 == Usage
 
-  Usage: sqsrun [options]
+  Usage: sqsrun [options] [-- <ARGV-for-exec-or-run>]
       -k, --key-id ID                  AWS Access Key ID
       -s, --secret-key KEY             AWS Secret Access Key
       -q, --queue NAME                 SQS queue name
@@ -52,6 +52,8 @@ _Example:_
   require 'json'
   js = JSON.load(STDIN.read)
   puts "received: #{js.inspect}"
+  
+  # $ sqsrun -k AWS_KEY_ID -s AWS_SEC_KEY -q SQS_NAME --run ./this_file
 
 
 === run
@@ -65,4 +67,6 @@ _Example:_
     js = JSON.load(msg)
     puts "received: #{js.inspect}"
   end
+  
+  # $ sqsrun -k AWS_KEY_ID -s AWS_SEC_KEY -q SQS_NAME --run ./this_file.rb
 
