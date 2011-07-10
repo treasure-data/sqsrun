@@ -55,7 +55,7 @@ _Example:_
   js = JSON.load(STDIN.read)
   puts "received: #{js.inspect}"
   
-  # $ sqsrun -k AWS_KEY_ID -s AWS_SEC_KEY -q SQS_NAME --run ./this_file
+  # $ sqsrun -k AWS_KEY_ID -s AWS_SEC_KEY -q SQS_NAME --exec ./this_file
 
 
 === run

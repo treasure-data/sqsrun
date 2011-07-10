@@ -5,14 +5,17 @@
 
 Gem::Specification.new do |s|
   s.name = %q{sqsrun}
-  s.version = "0.1.0"
+  s.version = "0.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Sadayuki Furuhashi"]
-  s.date = %q{2011-07-04}
+  s.date = %q{2011-07-11}
   s.default_executable = %q{sqsrun}
   s.email = %q{frsyuki@gmail.com}
   s.executables = ["sqsrun"]
+  s.extra_rdoc_files = [
+    "README.rdoc"
+  ]
   s.files = [
     "bin/sqsrun",
      "lib/sqsrun/command/sqsrun.rb"
