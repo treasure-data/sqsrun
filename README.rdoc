@@ -27,6 +27,7 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
       -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
       -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
       -i, --interval SEC               Polling interval (default: 1)
+      -p, --daemon PIDFILE             Daemonize (default: foreground)
 
 One of --push, --list, --exec or --run is required. The behavior of the commands is described below:
 

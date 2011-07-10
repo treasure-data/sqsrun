@@ -245,6 +245,7 @@ conf = {
   :extend_timeout => nil,
   :kill_timeout => nil,
   :interval => 1,
+  :daemon => nil,
 }
 
 op.on('-k', '--key-id ID', 'AWS Access Key ID') {|s|
@@ -292,6 +293,10 @@ op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (defau
 
 op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
   conf[:interval] = i
+}
+
+op.on('-p', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
+  conf[:daemon] = s
 }
 
 
@@ -344,6 +349,7 @@ rescue
   usage $!.to_s
 end
 
+
 case type
 when :push
   pro = SQSRun::Controller.new(conf)
@@ -356,6 +362,19 @@ when :list
   }
 
 when :exec, :run
+  if conf[:daemon]
+    exit!(0) if fork
+    Process.setsid
+    exit!(0) if fork
+    File.umask(0)
+    STDIN.reopen("/dev/null")
+    STDOUT.reopen("/dev/null", "w")
+    STDERR.reopen("/dev/null", "w")
+    File.open(conf[:daemon], "w") {|f|
+      f.write Process.pid.to_s
+    }
+  end
+
   worker = SQSRun::Worker.new(conf)
   SQSRun.worker = worker
 
