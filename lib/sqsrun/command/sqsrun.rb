@@ -5,29 +5,34 @@ module SQSRun
 
 
 class Worker
-  def initialize(conf, run_proc)
+  def initialize(conf)
     @key_id = conf[:key_id]
     @secret_key = conf[:secret_key]
     @queue_name = conf[:queue_name]
     @visibility_timeout = conf[:visibility_timeout]
     @extend_timeout = conf[:extend_timeout]
     @kill_timeout = conf[:kill_timeout]
-    @run_proc = run_proc
+    @interval = conf[:interval]
     @finished = false
 
     @extender = VisibilityExtender.new(@visibility_timeout, @extend_timeout)
     @sqs = RightAws::SqsGen2.new(@key_id, @secret_key)
     @queue = @sqs.queue(@queue_name)
+
+    @mutex = Mutex.new
+    @cond = ConditionVariable.new
   end
 
-  def run
+  def run(run_proc)
+    @run_proc = run_proc
     @extender.start
     until @finished
+    p "receiving"
       msg = @queue.receive(@visibility_timeout)
       if msg
         process(msg)
       else
-        sleep 1
+        cond_wait(@interval)
       end
     end
   end
@@ -37,7 +42,35 @@ class Worker
     @extender.shutdown
   end
 
+  def receive!
+    @mutex.synchronize {
+      @cond.broadcast
+    }
+  end
+
+  def finished?
+    @finished
+  end
+
   private
+  if ConditionVariable.new.method(:wait).arity == 1
+    require 'timeout'
+    def cond_wait(sec)
+      @mutex.synchronize {
+        Timeout.timeout(sec) {
+          @cond.wait(@mutex)
+        }
+      }
+    rescue Timeout::Error
+    end
+  else
+    def cond_wait(sec)
+      @mutex.synchronize {
+        @cond.wait(@mutex, sec)
+      }
+    end
+  end
+
   def process(msg)
     puts "started id=#{msg.id}"
     thread = Thread.new(msg.to_s, &@run_proc.method(:call))
@@ -177,6 +210,19 @@ class Controller
 end
 
 
+def self.worker=(worker)
+  @worker = worker
+end
+
+def self.receive!
+  @worker.receive!
+end
+
+def self.finished?
+  @worker.finished?
+end
+
+
 end
 
 
@@ -198,6 +244,7 @@ conf = {
   :visibility_timeout => 30,
   :extend_timeout => nil,
   :kill_timeout => nil,
+  :interval => 1,
 }
 
 op.on('-k', '--key-id ID', 'AWS Access Key ID') {|s|
@@ -241,6 +288,10 @@ op.on('-e', '--extend-timeout SEC', 'Threashold time before extending visibility
 
 op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (default: timeout * 5)', Integer) {|i|
   conf[:kill_timeout] = i
+}
+
+op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
+  conf[:interval] = i
 }
 
 
@@ -305,14 +356,8 @@ when :list
   }
 
 when :exec, :run
-  if type == :run
-    load File.expand_path(script)
-    run_proc = method(:run)
-  else
-    run_proc = SQSRun::ExecRunner.new(command)
-  end
-
-  worker = SQSRun::Worker.new(conf, run_proc)
+  worker = SQSRun::Worker.new(conf)
+  SQSRun.worker = worker
 
   trap :INT do
     puts "shutting down..."
@@ -324,6 +369,13 @@ when :exec, :run
     worker.shutdown
   end
 
-  worker.run
+  if type == :run
+    load File.expand_path(script)
+    run_proc = method(:run)
+  else
+    run_proc = SQSRun::ExecRunner.new(command)
+  end
+
+  worker.run(run_proc)
 end
 

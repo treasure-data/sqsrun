@@ -26,6 +26,7 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
           --run SCRIPT.rb              Run method named 'run' defined in the script
       -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
       -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
+      -i, --interval SEC               Polling interval (default: 1)
 
 One of --push, --list, --exec or --run is required. The behavior of the commands is described below:
 
