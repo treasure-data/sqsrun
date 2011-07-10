@@ -22,14 +22,16 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
       -t, --timeout SEC                SQS visibility timeout (default: 30)
           --push MESSAGE               Push maessage to the queue
           --list                       List queues
+          --configure PATH.yaml        Write configuration file
           --exec COMMAND               Execute command
           --run SCRIPT.rb              Run method named 'run' defined in the script
       -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
       -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
       -i, --interval SEC               Polling interval (default: 1)
-      -p, --daemon PIDFILE             Daemonize (default: foreground)
+      -d, --daemon PIDFILE             Daemonize (default: foreground)
+      -f, --file PATH.yaml             Read configuration file
 
-One of --push, --list, --exec or --run is required. The behavior of the commands is described below:
+One of --push, --list, --configure, --exec or --run is required. The behavior of the commands is described below:
 
 
 === push
@@ -40,6 +42,19 @@ Push a message to the queue. -k, -s and -q options are required.
 === list
 
 Show list of queues. -k and -s options are required.
+
+
+=== configure
+
+Write configuration file and exit. Written configuration file can be used with -f option:
+
+_Example:_
+
+  ## create out.yaml file
+  $ sqsrun --configure sqsrun.yaml -k KEY_ID -s SEC_KEY -q myqueue --run myrun.rb -- my run args
+
+  ## run sqsrun using configuration file
+  $ sqsrun -f sqsrun.yaml
 
 
 === exec

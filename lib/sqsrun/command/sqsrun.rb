@@ -8,8 +8,8 @@ class Worker
   def initialize(conf)
     @key_id = conf[:key_id]
     @secret_key = conf[:secret_key]
-    @queue_name = conf[:queue_name]
-    @visibility_timeout = conf[:visibility_timeout]
+    @queue_name = conf[:queue]
+    @visibility_timeout = conf[:timeout]
     @extend_timeout = conf[:extend_timeout]
     @kill_timeout = conf[:kill_timeout]
     @interval = conf[:interval]
@@ -192,7 +192,7 @@ class Controller
   def initialize(conf)
     @key_id = conf[:key_id]
     @secret_key = conf[:secret_key]
-    @queue_name = conf[:queue_name]
+    @queue_name = conf[:queue]
     @visibility_timeout = conf[:visibility_timeout]
   end
 
@@ -233,19 +233,14 @@ op.banner += " [-- <ARGV-for-exec-or-run>]"
 
 type = nil
 message = nil
-command = nil
-script = nil
+confout = nil
 
-conf = {
-  :key_id => nil,
-  :secret_key => nil,
-  :queue_name => nil,
-  :visibility_timeout => 30,
-  :extend_timeout => nil,
-  :kill_timeout => nil,
+defaults = {
+  :timeout => 30,
   :interval => 1,
-  :daemon => nil,
 }
+
+conf = { }
 
 op.on('-k', '--key-id ID', 'AWS Access Key ID') {|s|
   conf[:key_id] = s
@@ -256,11 +251,11 @@ op.on('-s', '--secret-key KEY', 'AWS Secret Access Key') {|s|
 }
 
 op.on('-q', '--queue NAME', 'SQS queue name') {|s|
-  conf[:queue_name] = s
+  conf[:queue] = s
 }
 
 op.on('-t', '--timeout SEC', 'SQS visibility timeout (default: 30)', Integer) {|i|
-  conf[:visibility_timeout] = i
+  conf[:timeout] = i
 }
 
 op.on('--push MESSAGE', 'Push maessage to the queue') {|s|
@@ -272,14 +267,19 @@ op.on('--list', 'List queues') {|s|
   type = :list
 }
 
+op.on('--configure PATH.yaml', 'Write configuration file') {|s|
+  type = :conf
+  confout = s
+}
+
 op.on('--exec COMMAND', 'Execute command') {|s|
   type = :exec
-  command = s
+  conf[:exec] = s
 }
 
 op.on('--run SCRIPT.rb', 'Run method named \'run\' defined in the script') {|s|
   type = :run
-  script = s
+  conf[:run] = s
 }
 
 op.on('-e', '--extend-timeout SEC', 'Threashold time before extending visibility timeout (default: timeout * 3/4)', Integer) {|i|
@@ -298,6 +298,10 @@ op.on('-d', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
   conf[:daemon] = s
 }
 
+op.on('-f', '--file PATH.yaml', 'Read configuration file') {|s|
+  conf[:file] = s
+}
+
 
 (class<<self;self;end).module_eval do
   define_method(:usage) do |msg|
@@ -306,6 +310,7 @@ op.on('-d', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
     exit 1
   end
 end
+
 
 begin
   if eqeq = ARGV.index('--')
@@ -320,8 +325,32 @@ begin
     usage nil
   end
 
+  if conf[:file]
+    require 'yaml'
+    yaml = YAML.load File.read(conf[:file])
+    y = {}
+    yaml.each_pair {|k,v| y[k.to_sym] = v }
+
+    uconf = conf
+    conf = defaults.merge(y).merge(conf)
+
+    if ARGV.empty? && conf[:args]
+      ARGV.clear
+      ARGV.concat conf[:args]
+    end
+  else
+    uconf = conf
+    conf = defaults.merge(conf)
+  end
+
   unless type
-    raise "--push, --list, --exec or --run is required"
+    if conf[:run]
+      type = :run
+    elsif conf[:exec]
+      type = :exec
+    else
+      raise "--push, --list, --configure, --exec or --run is required"
+    end
   end
 
   unless conf[:key_id]
@@ -333,19 +362,35 @@ begin
   end
 
   unless conf[:extend_timeout]
-    conf[:extend_timeout] = conf[:visibility_timeout] / 4 * 3
+    conf[:extend_timeout] = conf[:timeout] / 4 * 3
   end
 
   unless conf[:kill_timeout]
-    conf[:kill_timeout] = conf[:visibility_timeout] * 5
+    conf[:kill_timeout] = conf[:timeout] * 5
   end
 
-  if !conf[:queue_name] && (type == :push || type == :exec || type == :run)
+  if !conf[:queue] && (type == :push || type == :exec || type == :run)
     raise "-q, --queue NAME option is required"
   end
 
 rescue
   usage $!.to_s
+end
+
+
+if confout
+  require 'yaml'
+
+  uconf.delete(:file)
+  uconf[:args] = ARGV
+
+  y = {}
+  uconf.each_pair {|k,v| y[k.to_s] = v }
+
+  File.open(confout, "w") {|f|
+    f.write y.to_yaml
+  }
+  exit 0
 end
 
 
@@ -388,10 +433,10 @@ when :exec, :run
   end
 
   if type == :run
-    load File.expand_path(script)
+    load File.expand_path(conf[:run])
     run_proc = method(:run)
   else
-    run_proc = SQSRun::ExecRunner.new(command)
+    run_proc = SQSRun::ExecRunner.new(conf[:exec])
   end
 
   worker.run(run_proc)
