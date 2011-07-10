@@ -27,7 +27,6 @@ class Worker
     @run_proc = run_proc
     @extender.start
     until @finished
-    p "receiving"
       msg = @queue.receive(@visibility_timeout)
       if msg
         process(msg)
@@ -295,7 +294,7 @@ op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
   conf[:interval] = i
 }
 
-op.on('-p', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
+op.on('-d', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
   conf[:daemon] = s
 }
 
