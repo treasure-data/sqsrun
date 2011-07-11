@@ -9,8 +9,8 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
 2. sqsrun executes a command or runs a script.
    * if the process takes long time, sqsrun extends visibility timeout. this is repeated until it is killed.
    * if the process takes more long time, sqsrun kills the process.
-4. if it succeeded, sqsrun removes the message from the queue.
-5. if it failed, sqsrun set the visibility timeout to 0 and expect to be retried.
+3. if it succeeded, sqsrun removes the message from the queue.
+4. if it failed, sqsrun set the visibility timeout to 0 and expect to be retried.
 
 
 == Usage
@@ -50,10 +50,10 @@ Write configuration file and exit. Written configuration file can be used with -
 
 _Example:_
 
-  ## create out.yaml file
+  ## create sqsrun.yaml file
   $ sqsrun --configure sqsrun.yaml -k KEY_ID -s SEC_KEY -q myqueue --run myrun.rb -- my run args
 
-  ## run sqsrun using configuration file
+  ## run sqsrun using the configuration file
   $ sqsrun -f sqsrun.yaml
 
 

@@ -1,4 +1,3 @@
-require 'right_aws'
 require 'monitor'
 
 module SQSRun
@@ -6,6 +5,7 @@ module SQSRun
 
 class Worker
   def initialize(conf)
+    require 'right_aws'
     @key_id = conf[:key_id]
     @secret_key = conf[:secret_key]
     @queue_name = conf[:queue]
@@ -39,6 +39,7 @@ class Worker
   def shutdown
     @finished = true
     @extender.shutdown
+    receive!
   end
 
   def receive!
@@ -89,8 +90,8 @@ class Worker
       end
     rescue
       puts "failed id=#{msg.id}: #{$!}"
-      $!.backtrace.each {|bk|
-        puts "  #{bk}"
+      $!.backtrace.each {|bt|
+        puts "  #{bt}"
       }
     end
 
@@ -137,7 +138,7 @@ class Worker
     end
 
     def shutdown
-      @finished = false
+      @finished = true
     end
 
     private
@@ -190,6 +191,7 @@ end
 
 class Controller
   def initialize(conf)
+    require 'right_aws'
     @key_id = conf[:key_id]
     @secret_key = conf[:secret_key]
     @queue_name = conf[:queue]
@@ -331,7 +333,6 @@ begin
     y = {}
     yaml.each_pair {|k,v| y[k.to_sym] = v }
 
-    uconf = conf
     conf = defaults.merge(y).merge(conf)
 
     if ARGV.empty? && conf[:args]
@@ -339,7 +340,6 @@ begin
       ARGV.concat conf[:args]
     end
   else
-    uconf = conf
     conf = defaults.merge(conf)
   end
 
@@ -381,11 +381,11 @@ end
 if confout
   require 'yaml'
 
-  uconf.delete(:file)
-  uconf[:args] = ARGV
+  conf.delete(:file)
+  conf[:args] = ARGV
 
   y = {}
-  uconf.each_pair {|k,v| y[k.to_s] = v }
+  conf.each_pair {|k,v| y[k.to_s] = v }
 
   File.open(confout, "w") {|f|
     f.write y.to_yaml
