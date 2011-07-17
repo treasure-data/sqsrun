@@ -13,6 +13,7 @@ confout = nil
 defaults = {
   :timeout => 30,
   :interval => 1,
+  :kill_retry => 60,
 }
 
 conf = { }
@@ -63,6 +64,14 @@ op.on('-e', '--extend-timeout SEC', 'Threashold time before extending visibility
 
 op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (default: timeout * 5)', Integer) {|i|
   conf[:kill_timeout] = i
+}
+
+op.on('-X', '--kill-retry SEC', 'Threashold time before retrying killing process (default: 60)', Integer) {|i|
+  conf[:kill_retry] = i
+}
+
+op.on('-g', '--giveup-timeout SEC', 'Threashold time before giving up retrying (default: timeout * 50', Integer) {|i|
+  conf[:giveup_timeout] = i
 }
 
 op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
@@ -142,6 +151,10 @@ begin
     conf[:kill_timeout] = conf[:timeout] * 5
   end
 
+  unless conf[:giveup_timeout]
+    conf[:giveup_timeout] = conf[:timeout] * 50
+  end
+
   if !conf[:queue] && (type == :push || type == :exec || type == :run)
     raise "-q, --queue NAME option is required"
   end
@@ -208,10 +221,18 @@ when :exec, :run
   if type == :run
     load File.expand_path(conf[:run])
     run_proc = method(:run)
+    if defined? terminate
+      kill_proc = method(:terminate)
+    else
+      kill_proc = Proc.new { }
+    end
   else
     run_proc = SQSRun::ExecRunner.new(conf[:exec])
+    kill_proc = run_proc.method(:terminate)
   end
 
-  worker.run(run_proc)
+  worker.init_proc(run_proc, kill_proc)
+
+  worker.run
 end
 
