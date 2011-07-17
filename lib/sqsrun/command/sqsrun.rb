@@ -39,7 +39,7 @@ op.on('--create', 'Create new queue') {|s|
   type = :create
 }
 
-op.on('--delete', 'Delete a  queue') {|s|
+op.on('--delete', 'Delete a queue') {|s|
   type = :delete
 }
 
@@ -142,7 +142,7 @@ begin
     elsif conf[:exec]
       type = :exec
     else
-      raise "--create, --delete, --attr, --push, --list, --configure, --exec or --run is required"
+      raise "--list, --create, --delete, --attr, --push, --configure, --exec or --run is required"
     end
   end
 
@@ -162,11 +162,7 @@ begin
     conf[:kill_timeout] = conf[:timeout] * 5
   end
 
-  unless conf[:giveup_timeout]
-    conf[:giveup_timeout] = conf[:timeout] * 50
-  end
-
-  if !conf[:queue] && (type == :push || type == :exec || type == :run)
+  if !conf[:queue] && (type != :list && type != :conf)
     raise "-q, --queue NAME option is required"
   end
 

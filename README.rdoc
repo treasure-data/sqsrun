@@ -20,6 +20,9 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
       -s, --secret-key KEY             AWS Secret Access Key
       -q, --queue NAME                 SQS queue name
       -t, --timeout SEC                SQS visibility timeout (default: 30)
+          --create                     Create new queue
+          --delete                     Delete a queue
+          --attr Key=Value             Set attribute
           --push MESSAGE               Push maessage to the queue
           --list                       List queues
           --configure PATH.yaml        Write configuration file
@@ -27,21 +30,57 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
           --run SCRIPT.rb              Run method named 'run' defined in the script
       -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
       -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
+      -X, --kill-retry SEC             Threashold time before retrying killing process (default: 60)
       -i, --interval SEC               Polling interval (default: 1)
       -d, --daemon PIDFILE             Daemonize (default: foreground)
       -f, --file PATH.yaml             Read configuration file
 
-One of --push, --list, --configure, --exec or --run is required. The behavior of the commands is described below:
+One of --list, --create, --delete, --attr, --push, --configure, --exec or --run is required. The behavior of the commands is described below:
+
+
+=== list
+
+Show list of queues. -k and -s options are required.
+
+_Example:_
+
+  $ sqsrun -k KEY_ID -s SEC_KEY --list
+
+
+=== create
+
+Create new queue. -k, -s and -q options are required.
+
+_Example:_
+
+  $ sqsrun -k KEY_ID -s SEC_KEY --create -q myqueue
+
+
+=== delete
+
+Delete a queue. -k, -s and -q options are required. Note that messages in the queue will be lost.
+
+_Example:_
+
+  $ sqsrun -k KEY_ID -s SEC_KEY --delete -q myqueue
+
+
+=== attr
+
+Set a attribute on a queue. -k, -s and -q options are required.
+
+_Example:_
+
+  $ sqsrun -k KEY_ID -s SEC_KEY -q myqueue --attr MessageRetentionPeriod=3600
 
 
 === push
 
 Push a message to the queue. -k, -s and -q options are required.
 
+_Example:_
 
-=== list
-
-Show list of queues. -k and -s options are required.
+  $ sqsrun -k KEY_ID -s SEC_KEY -q myqueue --push '{"a":"b"}'
 
 
 === configure
@@ -66,11 +105,14 @@ Execute a command when a message is received. Body of the message is passed to t
 _Example:_
 
   #!/usr/bin/env ruby
+  
   require 'json'
   js = JSON.load(STDIN.read)
   puts "received: #{js.inspect}"
   
   # $ sqsrun -k AWS_KEY_ID -s AWS_SEC_KEY -q SQS_NAME --exec ./this_file
+
+When the kill timeout (-x, --klill-timeout) is elapsed, SIGTERM signal will be sent to the child process. The signal will be repeated every few seconds (-X, --kill-retry).
 
 
 === run
@@ -80,10 +122,19 @@ This is same as 'exec' except that this calls a method named 'run' defined in th
 _Example:_
 
   require 'json'
+  
   def run(msg)
     js = JSON.load(msg)
     puts "received: #{js.inspect}"
   end
   
+  # optionally you can define terminate method
+  # which will be called when kill timeout is elapsed.
+  def terminate
+  end
+  
   # $ sqsrun -k AWS_KEY_ID -s AWS_SEC_KEY -q SQS_NAME --run ./this_file.rb
+
+
+When the kill timeout (-x, --klill-timeout) is elapsed, terminate() method will be called (if it is defined). It will be repeated every few seconds (-X, --kill-retry).
 
