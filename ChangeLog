@@ -1,0 +1,20 @@
+
+== 2011-07-18 version 0.5.0
+
+* Added respectable timeout implementation
+* Added --create command: creates a new queue
+* Added --delete command: deletes a queue
+* Added --attr command: updates attributes of a queue
+* --list command shows attributes of queues
+
+
+== 2011-07-11 version 0.4.0
+
+* Splits single bin file into multiple files
+* Added test codes
+
+
+== 2011-07-10 version 0.3.0
+
+* Initial release
+
