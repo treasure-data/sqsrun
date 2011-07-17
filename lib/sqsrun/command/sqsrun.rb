@@ -70,10 +70,6 @@ op.on('-X', '--kill-retry SEC', 'Threashold time before retrying killing process
   conf[:kill_retry] = i
 }
 
-op.on('-g', '--giveup-timeout SEC', 'Threashold time before giving up retrying (default: timeout * 50', Integer) {|i|
-  conf[:giveup_timeout] = i
-}
-
 op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
   conf[:interval] = i
 }
@@ -186,9 +182,19 @@ when :push
   pro.push(message)
 
 when :list
+  require 'json'
+  format = "%10s  %5s   %s"
   pro = SQSRun::Controller.new(conf)
-  pro.list.each {|name|
-    puts name
+  list = pro.list
+  puts format % ['name', 'size', 'attributes']
+  list.each {|queue|
+    name = queue.name
+    size = queue.size
+    queue.get_attribute.each_pair {|k,v|
+      puts format % [name, size, "#{k}=#{v.to_s.dump}"]
+      name = ''
+      size = ''
+    }
   }
 
 when :exec, :run

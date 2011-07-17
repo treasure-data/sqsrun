@@ -19,7 +19,7 @@ class Controller
 
   def list
     @sqs = RightAws::SqsGen2.new(@key_id, @secret_key)
-    @sqs.queues.map {|q| q.name }
+    @sqs.queues.map {|q| q }
   end
 end
 
