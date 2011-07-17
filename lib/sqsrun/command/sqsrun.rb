@@ -8,6 +8,7 @@ op.banner += " [-- <ARGV-for-exec-or-run>]"
 
 type = nil
 message = nil
+attrkv = nil
 confout = nil
 
 defaults = {
@@ -32,6 +33,20 @@ op.on('-q', '--queue NAME', 'SQS queue name') {|s|
 
 op.on('-t', '--timeout SEC', 'SQS visibility timeout (default: 30)', Integer) {|i|
   conf[:timeout] = i
+}
+
+op.on('--create', 'Create new queue') {|s|
+  type = :create
+}
+
+op.on('--delete', 'Delete a  queue') {|s|
+  type = :delete
+}
+
+op.on('--attr Key=Value', 'Set attribute') {|s|
+  type = :attr
+  k, v = s.split('=',2)
+  attrkv = [k.to_s, v.to_s]
 }
 
 op.on('--push MESSAGE', 'Push maessage to the queue') {|s|
@@ -127,7 +142,7 @@ begin
     elsif conf[:exec]
       type = :exec
     else
-      raise "--push, --list, --configure, --exec or --run is required"
+      raise "--create, --delete, --attr, --push, --list, --configure, --exec or --run is required"
     end
   end
 
@@ -177,24 +192,54 @@ end
 
 
 case type
+when :create
+  con = SQSRun::Controller.new(conf)
+  if con.create
+    puts "Queue #{conf[:queue].to_s.dump} is created."
+    puts "Note that it takes some seconds before the list is updated."
+  else
+    puts "queue #{conf[:queue].to_s.dump} already exists."
+  end
+
+when :delete
+  con = SQSRun::Controller.new(conf)
+  if con.delete(true)
+    puts "Queue #{conf[:queue].to_s.dump} is deleted."
+    puts "Note that it takes some seconds before the list is updated."
+  else
+    puts "Queue #{conf[:queue].to_s.dump} does not exist."
+  end
+
+when :attr
+  con = SQSRun::Controller.new(conf)
+  k, v = *attrkv
+  if con.set_attribute(k, v)
+    puts "#{k}=#{v.to_s.dump}"
+  else
+    puts "Queue #{conf[:queue].to_s.dump} does not exist."
+  end
+
 when :push
-  pro = SQSRun::Controller.new(conf)
-  pro.push(message)
+  con = SQSRun::Controller.new(conf)
+  con.push(message)
 
 when :list
   require 'json'
   format = "%10s  %5s   %s"
-  pro = SQSRun::Controller.new(conf)
-  list = pro.list
+  con = SQSRun::Controller.new(conf)
+  list = con.list
   puts format % ['name', 'size', 'attributes']
   list.each {|queue|
-    name = queue.name
-    size = queue.size
-    queue.get_attribute.each_pair {|k,v|
-      puts format % [name, size, "#{k}=#{v.to_s.dump}"]
-      name = ''
-      size = ''
-    }
+    begin
+      name = queue.name
+      size = queue.size
+      queue.get_attribute.each_pair {|k,v|
+        puts format % [name, size, "#{k}=#{v.to_s.dump}"]
+        name = ''
+        size = ''
+      }
+    rescue RightAws::AwsError
+    end
   }
 
 when :exec, :run
