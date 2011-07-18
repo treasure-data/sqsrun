@@ -1,4 +1,10 @@
 
+== 2011-07-19 version 0.6.0
+
+* Changed not to set visibility_timeout=0 when a task is failed
+* Added -E, --release-on-fail option
+
+
 == 2011-07-18 version 0.5.0
 
 * Added respectable timeout implementation

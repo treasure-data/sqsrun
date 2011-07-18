@@ -84,7 +84,7 @@ class Worker
 
     success = false
     begin
-      @run_proc.call
+      @run_proc.call(msg.to_s)
       puts "finished id=#{msg.id}"
       success = true
     rescue
