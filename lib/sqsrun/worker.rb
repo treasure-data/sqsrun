@@ -14,6 +14,7 @@ class Worker
     @kill_timeout = conf[:kill_timeout]
     @kill_retry = conf[:kill_retry]
     @interval = conf[:interval]
+    @release_on_fail = conf[:release_on_fail]
     @finished = false
 
     @extender = TimerThread.new(@visibility_timeout, @extend_timeout, @kill_timeout, @kill_retry)
@@ -78,13 +79,13 @@ class Worker
 
   def process(msg)
     puts "started id=#{msg.id}"
-    thread = Thread.new(msg.to_s, &@run_proc.method(:call))
 
     @extender.set_message(msg)
 
     success = false
     begin
-      thread.join
+      @run_proc.call
+      puts "finished id=#{msg.id}"
       success = true
     rescue
       puts "failed id=#{msg.id}: #{$!}"
@@ -98,7 +99,9 @@ class Worker
     if success
       msg.delete
     else
-      msg.visibility = 0
+      if @release_on_fail
+        msg.visibility = 0
+      end
     end
   end
 

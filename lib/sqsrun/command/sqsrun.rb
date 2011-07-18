@@ -15,6 +15,7 @@ defaults = {
   :timeout => 30,
   :interval => 1,
   :kill_retry => 60,
+  :release_on_fail => false,
 }
 
 conf = { }
@@ -77,7 +78,7 @@ op.on('-e', '--extend-timeout SEC', 'Threashold time before extending visibility
   conf[:extend_timeout] = i
 }
 
-op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (default: timeout * 5)', Integer) {|i|
+op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (default: timeout * 10)', Integer) {|i|
   conf[:kill_timeout] = i
 }
 
@@ -87,6 +88,10 @@ op.on('-X', '--kill-retry SEC', 'Threashold time before retrying killing process
 
 op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
   conf[:interval] = i
+}
+
+op.on('-E', '--release-on-fail', 'Releases lock if task failed so that other node can retry immediately', TrueClass) {|b|
+  conf[:release_on_fail] = b
 }
 
 op.on('-d', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
@@ -159,7 +164,7 @@ begin
   end
 
   unless conf[:kill_timeout]
-    conf[:kill_timeout] = conf[:timeout] * 5
+    conf[:kill_timeout] = conf[:timeout] * 10
   end
 
   if !conf[:queue] && (type != :list && type != :conf)
