@@ -6,7 +6,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name = "sqsrun"
-    gemspec.summary = "Generic SQS Worker Executor Service"
+    gemspec.summary = "Generic Worker Executor Service for Amazon SQS"
     gemspec.author = "Sadayuki Furuhashi"
     gemspec.email = "frsyuki@gmail.com"
     #gemspec.homepage = "http://.../"

@@ -1,4 +1,10 @@
 
+== 2011-07-23 version 0.6.1
+
+* Added --env K=V option
+* Accepts multiple -f, --file option
+
+
 == 2011-07-19 version 0.6.0
 
 * Changed not to set visibility_timeout=0 when a task is failed

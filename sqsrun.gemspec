@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{sqsrun}
-  s.version = "0.6.0"
+  s.version = "0.6.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Sadayuki Furuhashi"]
-  s.date = %q{2011-07-18}
+  s.date = %q{2011-07-23}
   s.default_executable = %q{sqsrun}
   s.email = %q{frsyuki@gmail.com}
   s.executables = ["sqsrun"]
@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
-  s.summary = %q{Generic SQS Worker Executor Service}
+  s.summary = %q{Generic Worker Executor Service for Amazon SQS}
   s.test_files = [
     "test/exec_test.rb",
      "test/test_helper.rb",
