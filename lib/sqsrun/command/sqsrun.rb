@@ -74,6 +74,11 @@ op.on('--run SCRIPT.rb', 'Run method named \'run\' defined in the script') {|s|
   conf[:run] = s
 }
 
+op.on('--env K=V', 'Set environment variable') {|s|
+  k, v = s.split('=',2)
+  (conf[:env] ||= {})[k] = v
+}
+
 op.on('-e', '--extend-timeout SEC', 'Threashold time before extending visibility timeout (default: timeout * 3/4)', Integer) {|i|
   conf[:extend_timeout] = i
 }
@@ -90,7 +95,7 @@ op.on('-i', '--interval SEC', 'Polling interval (default: 1)', Integer) {|i|
   conf[:interval] = i
 }
 
-op.on('-E', '--release-on-fail', 'Releases lock if task failed so that other node can retry immediately', TrueClass) {|b|
+op.on('-U', '--release-on-fail', 'Releases lock if task failed so that other node can retry immediately', TrueClass) {|b|
   conf[:release_on_fail] = b
 }
 
@@ -99,7 +104,7 @@ op.on('-d', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
 }
 
 op.on('-f', '--file PATH.yaml', 'Read configuration file') {|s|
-  conf[:file] = s
+  (conf[:files] ||= []) << s
 }
 
 
@@ -125,11 +130,16 @@ begin
     usage nil
   end
 
-  if conf[:file]
+  if conf[:files]
     require 'yaml'
-    yaml = YAML.load File.read(conf[:file])
+    docs = ''
+    conf[:files].each {|file|
+      docs << File.read(file)
+    }
     y = {}
-    yaml.each_pair {|k,v| y[k.to_sym] = v }
+    YAML.load_documents(docs) {|yaml|
+      yaml.each_pair {|k,v| y[k.to_sym] = v }
+    }
 
     conf = defaults.merge(y).merge(conf)
 
@@ -179,7 +189,7 @@ end
 if confout
   require 'yaml'
 
-  conf.delete(:file)
+  conf.delete(:files)
   conf[:args] = ARGV
 
   y = {}

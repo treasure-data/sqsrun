@@ -15,6 +15,7 @@ class Worker
     @kill_retry = conf[:kill_retry]
     @interval = conf[:interval]
     @release_on_fail = conf[:release_on_fail]
+    @env = conf[:env] || {}
     @finished = false
 
     @extender = TimerThread.new(@visibility_timeout, @extend_timeout, @kill_timeout, @kill_retry)
@@ -79,6 +80,10 @@ class Worker
 
   def process(msg)
     puts "started id=#{msg.id}"
+
+    @env.each_pair {|k,v|
+      ENV[k] = v
+    }
 
     @extender.set_message(msg)
 

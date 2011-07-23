@@ -28,10 +28,12 @@ A Generics Worker Executor Service for Amazon SQS. It polls SQS queue and run co
           --configure PATH.yaml        Write configuration file
           --exec COMMAND               Execute command
           --run SCRIPT.rb              Run method named 'run' defined in the script
+          --env K=V                    Set environment variable
       -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
-      -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 5)
+      -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 10)
       -X, --kill-retry SEC             Threashold time before retrying killing process (default: 60)
       -i, --interval SEC               Polling interval (default: 1)
+      -U, --release-on-fail            Releases lock if task failed so that other node can retry immediately
       -d, --daemon PIDFILE             Daemonize (default: foreground)
       -f, --file PATH.yaml             Read configuration file
 
