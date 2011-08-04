@@ -79,7 +79,7 @@ class Worker
   end
 
   def process(msg)
-    puts "started id=#{msg.id}"
+    $log.info "started id=#{msg.id}"
 
     @env.each_pair {|k,v|
       ENV[k] = v
@@ -90,12 +90,12 @@ class Worker
     success = false
     begin
       @run_proc.call(msg.to_s)
-      puts "finished id=#{msg.id}"
+      $log.info "finished id=#{msg.id}"
       success = true
     rescue
-      puts "failed id=#{msg.id}: #{$!}"
+      $log.error "failed id=#{msg.id}: #{$!}"
       $!.backtrace.each {|bt|
-        puts "  #{bt}"
+        $log.error "  #{bt}"
       }
     end
 
@@ -174,7 +174,7 @@ class Worker
     def try_extend(now, msg)
       if now > @extend_time
         ntime = msg.visibility + @visibility_timeout
-        puts "extending timeout=#{ntime} id=#{msg.id}"
+        $log.debug "extending timeout=#{ntime} id=#{msg.id}"
         msg.visibility = ntime
         @extend_time = now + @extend_timeout
       end
@@ -183,7 +183,7 @@ class Worker
     def try_kill(now, msg)
       if now > @kill_time
         if @kill_proc
-          puts "killing #{msg.id}..."
+          $log.info "killing #{msg.id}..."
           @kill_proc.call rescue nil
         end
         @kill_time = now + @kill_retry

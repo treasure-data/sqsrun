@@ -107,6 +107,10 @@ op.on('-f', '--file PATH.yaml', 'Read configuration file') {|s|
   (conf[:files] ||= []) << s
 }
 
+op.on('-o', '--log PATH', 'Path to log file (default: stdout)') {|s|
+  conf[:log] = s
+}
+
 
 (class<<self;self;end).module_eval do
   define_method(:usage) do |msg|
@@ -202,6 +206,16 @@ if confout
 end
 
 
+require 'logger'
+if log_path = conf[:log]
+  log_io = File.open(log_path, 'a')
+  $log = Logger.new(log_io)
+else
+  $log = Logger.new(STDOUT)
+end
+$log.level = Logger::DEBUG
+
+
 case type
 when :create
   con = SQSRun::Controller.new(conf)
@@ -271,13 +285,19 @@ when :exec, :run
   SQSRun.worker = worker
 
   trap :INT do
-    puts "shutting down..."
+    $log.info "shutting down..."
     worker.shutdown
   end
 
   trap :TERM do
-    puts "shutting down..."
+    $log.info "shutting down..."
     worker.shutdown
+  end
+
+  trap :HUP do
+    if log_io
+      log_io.reopen(log_path, 'a')
+    end
   end
 
   if type == :run
