@@ -34,7 +34,15 @@ class Worker
   def run
     @extender.start
     until @finished
-      msg = @queue.receive(@visibility_timeout)
+      begin
+        msg = @queue.receive(@visibility_timeout)
+      rescue RightAws::AwsError => e
+        if e.errors.find {|code,msg| code.to_s == "RequestExpired" }
+          $log.error e
+          retry
+        end
+        raise
+      end
       if msg
         process(msg)
       else
